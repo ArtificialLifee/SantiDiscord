@@ -1,36 +1,41 @@
 import discord
 from discord.ext import commands
-import openai
+from openai import OpenAI
 import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 # Variable of .env for usage create a new .env file with this
-API_KEY_OPENAI = os.environ.get('OPENAI_API_KEY')
-DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
+API_KEY_OPENAI = os.getenv('OPENAI_API_KEY')
+DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 
-# Configuración de intents (nota: para leer el contenido de los mensajes se debe activar message_content)
+# Default configuration discord SDK for reading message
 intents = discord.Intents.default()
 intents.message_content = True
-
-# Inicializamos el bot con un prefijo, por ejemplo "!"
+# Command prefix 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Este prompt define el contexto del LLM para que responda como Santi.
+# Default system configuration if needed change it
 system_prompt = (
     "Eres Santi, un humano empático, cercano y con respuestas naturales. "
     "Siempre respondes de manera sincera y con humor, ayudando a las personas "
     "como lo haría un amigo de confianza. Mantén un tono cálido y humano en tus respuestas."
 )
+# Default LLM configuration with API_KEY
+client = OpenAI(api_key=API_KEY_OPENAI)
 
 @bot.event
 async def on_ready():
     print(f"Bot {bot.user} se ha conectado a Discord correctamente.")
 
-# Comando para interactuar con el bot: !santi <mensaje>
+# Command 1 for bot interaction example: !santi <message>
 @bot.command(name="santi", help="Habla con Santi. Escribe !santi <mensaje>")
 async def santi(ctx, *, mensaje: str):
     try:
-        # Realizamos la petición a la API de OpenAI utilizando ChatCompletion
-        response = openai.ChatCompletion.create(
+        # OpenAI default API call
+        response = client.chat.completions.create(
             model="gpt-4o-mini",   
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -39,13 +44,13 @@ async def santi(ctx, *, mensaje: str):
             temperature=0.7,  
             max_tokens=200    
         )
-        # Obtenemos el mensaje generado por OpenAI
+        
         respuesta = response.choices[0].message.content
         await ctx.send(respuesta)
     except Exception as e:
         print(f"Error al obtener respuesta: {e}")
         await ctx.send("Lo siento, ha ocurrido un error al procesar tu mensaje.")
 
-# Inicia el bot utilizando el token de Discord
+# Run server discord bot
 bot.run(DISCORD_TOKEN)
 
